@@ -1,0 +1,177 @@
+library com.livecode.extensions.devore.windows
+
+  use com.livecode.foreign
+
+  metadata title is "Windows"
+  metadata author is "Trevor DeVore"
+  metadata version is "0.1.0"
+
+  // Note: These public types aren't recognized by the compiler. I think example in docs is wrong.
+  public type DWORD is CULong
+  public type WIDESTRING is ZStringUTF16 // LPCTSTR
+  public type HINSTANCE is Pointer
+  public type HMENU is Pointer
+  public type HWND is Pointer
+
+  foreign handler User32SetForegroundWindow(in hWnd as IntPtr) returns CBool binds to "user32>SetForegroundWindow!stdcall"
+  foreign handler User32FindWindowEx(in hwndParent as optional Pointer, in hwndChildAfter as optional Pointer, in lpszClass as optional ZStringUTF16, in lpszWindow as optional ZStringUTF16) returns optional IntPtr binds to "user32>FindWindowExW!stdcall"
+  foreign handler User32FindWindow(in lpszClass as optional ZStringUTF16, in lpszWindow as optional ZStringUTF16) returns optional IntPtr binds to "user32>FindWindowW!stdcall"
+  foreign handler User32GetActiveWindow() returns optional IntPtr binds to "user32>GetActiveWindow!stdcall"
+  foreign handler User32GetForegroundWindow() returns optional IntPtr binds to "user32>GetForegroundWindow!stdcall"
+  foreign handler User32LockSetForegroundWindow(in uLockCode as CUInt) returns CBool binds to "user32>LockSetForegroundWindow!stdcall"
+
+  foreign handler Kernel32GetLastError() returns CULong binds to "kernel32>GetLastError!stdcall"
+  foreign handler Kernel32FormatMessage(in dwFlags as CULong, in lpSource as optional IntPtr, in dwMessageId as CULong, in dwLanguageId as CULong, in lpBuffer as ZStringUTF16, in nSize as CULong, in Arguments as optional Pointer) returns optional IntPtr binds to "kernel32>FormatMessageW!stdcall"
+
+
+  /**
+  Crashes in current form
+  */
+  public handler GetLastErrorMessage() returns String
+    variable tError as Number
+    variable tErrorMsg as String
+    variable tCharWidth as Number
+
+    unsafe
+      put Kernel32GetLastError() into tError
+      if tError > 0 then
+        put Kernel32FormatMessage(256, nothing, tError, 0, tErrorMsg, 0, nothing) into tCharWidth
+      end if
+    end unsafe
+
+    return tErrorMsg
+  end handler
+
+
+  /**
+  Summary: Returns the last error code.
+
+  Description:
+  See https://msdn.microsoft.com/en-us/library/windows/desktop/ms681381(v=vs.85).aspx
+
+  Returns: Integer
+  */
+  public handler GetLastError() returns Integer
+    variable tError as Number
+
+    unsafe
+      put Kernel32GetLastError() into tError
+    end unsafe
+
+    return tError
+  end handler
+
+
+  /**
+  Summary: Returns the window id of the foreground window.
+
+  Returns: Window id (integer)
+  */
+  public handler GetForegroundWindow() returns Integer
+    variable hWnd as optional Number
+
+    unsafe
+      put User32GetForegroundWindow() into hWnd
+    end unsafe
+
+    if hWnd is not nothing then
+      return hWnd
+    else
+      return 0
+    end if
+  end handler
+
+
+  /**
+  Summary: Returns the window id of the application's active window.
+
+  Returns: Window id (integer)
+  */
+  public handler GetActiveWindow() returns Integer
+    variable hWnd as optional Number
+
+    unsafe
+      put User32GetActiveWindow() into hWnd
+    end unsafe
+
+    if hWnd is not nothing then
+      return hWnd
+    else
+      return 0
+    end if
+  end handler
+
+
+  /**
+  Summary: Disables calls to SetForegroundWindow.
+
+  Description:
+  See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633532(v=vs.85).aspx
+
+  Only the foreground process can make calls to this handler.
+  */
+  public handler LockSetForegroundWindow(in pLock as Boolean) returns Boolean
+    variable tResult as Boolean
+    variable tLockCode as Number
+
+    if pLock then
+      put 1 into tLockCode
+    else
+      put 2 into tLockCode
+    end if
+
+    unsafe
+      put User32LockSetForegroundWindow(tLockCode) into tResult
+    end unsafe
+
+    return tResult
+  end handler
+
+
+  /**
+  Summary: Sets the foreground window.
+
+  Parameters:
+  hWnd: An integer representing the id of the window.
+
+  Description:
+  See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633539(v=vs.85).aspx for list of restrictions.
+
+  GetForegroundWindow() and GetActiveWindow() return valid hWnd values as does the `windowId` property of a stack.
+  Note that you won't be able to bring your stack window to the front if another application is currently focused.
+
+  Returns: Boolean
+  */
+  public handler SetForegroundWindow(in hWnd as Number) returns Boolean
+    variable tResult as Boolean
+
+    unsafe
+      put User32SetForegroundWindow(hWnd) into tResult
+    end unsafe
+
+    return tResult
+  end handler
+
+
+  /**
+  Summary: Finds a window of a particular class or name.
+
+  Description:
+  See https://msdn.microsoft.com/en-us/library/windows/desktop/ms633499(v=vs.85).aspx
+
+  Returns: Window id or 0 if no window was found.
+  */
+  public handler FindWindow(in pWindowClass as String, in pWindowTitle as String) returns Number
+    variable hWnd as optional Number
+
+    unsafe
+      put User32FindWindow(pWindowClass, pWindowTitle) into hWnd
+    end unsafe
+
+    if hWnd is not nothing then
+      return hWnd
+    else
+      return 0
+    end if
+  end handler
+end library

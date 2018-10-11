@@ -1,6 +1,7 @@
 library com.livecode.extensions.devore.windows
 
   use com.livecode.foreign
+  use com.livecode.engine
 
   metadata title is "Windows"
   metadata author is "Trevor DeVore"
@@ -8,20 +9,29 @@ library com.livecode.extensions.devore.windows
 
   // Note: These public types aren't recognized by the compiler. I think example in docs is wrong.
   public type DWORD is CULong
-  public type WIDESTRING is ZStringUTF16 // LPCTSTR
-  public type HINSTANCE is Pointer
+  public type Widestring is ZStringUTF16 // LPCTSTR
+  public type Hinstance is Pointer
   public type HMENU is Pointer
-  public type HWND is Pointer
+  public type HWNDWin is UIntPtr
+  public type HANDLE is UIntPtr
+  public type HRESULT is CLong
 
-  foreign handler User32SetForegroundWindow(in hWnd as UIntPtr) returns CBool binds to "user32>SetForegroundWindow!stdcall"
-  foreign handler User32FindWindowEx(in hwndParent as optional Pointer, in hwndChildAfter as optional Pointer, in lpszClass as optional ZStringUTF16, in lpszWindow as optional ZStringUTF16) returns optional UIntPtr binds to "user32>FindWindowExW!stdcall"
-  foreign handler User32FindWindow(in lpszClass as optional ZStringUTF16, in lpszWindow as optional ZStringUTF16) returns optional UIntPtr binds to "user32>FindWindowW!stdcall"
-  foreign handler User32GetActiveWindow() returns optional UIntPtr binds to "user32>GetActiveWindow!stdcall"
-  foreign handler User32GetForegroundWindow() returns optional UIntPtr binds to "user32>GetForegroundWindow!stdcall"
+  foreign handler User32SetForegroundWindow(in hWnd as HWNDWin) returns CBool binds to "user32>SetForegroundWindow!stdcall"
+  foreign handler User32FindWindowEx(in hwndParent as optional HWNDWin, in hwndChildAfter as optional HWNDWin, in lpszClass as optional Widestring, in lpszWindow as optional Widestring) returns optional HWNDWin binds to "user32>FindWindowExW!stdcall"
+  foreign handler User32FindWindow(in lpszClass as optional Widestring, in lpszWindow as optional Widestring) returns optional HWNDWin binds to "user32>FindWindowW!stdcall"
+  foreign handler User32GetActiveWindow() returns optional HWNDWin binds to "user32>GetActiveWindow!stdcall"
+  foreign handler User32GetForegroundWindow() returns optional HWNDWin binds to "user32>GetForegroundWindow!stdcall"
   foreign handler User32LockSetForegroundWindow(in uLockCode as CUInt) returns CBool binds to "user32>LockSetForegroundWindow!stdcall"
 
-  foreign handler Kernel32GetLastError() returns CULong binds to "kernel32>GetLastError!stdcall"
-  foreign handler Kernel32FormatMessage(in dwFlags as CULong, in lpSource as optional UIntPtr, in dwMessageId as CULong, in dwLanguageId as CULong, in lpBuffer as ZStringUTF16, in nSize as CULong, in Arguments as optional Pointer) returns optional UIntPtr binds to "kernel32>FormatMessageW!stdcall"
+  foreign handler User32GetDpiForWindow(in hWnd as HWNDWin) returns UInt32 binds to "user32>GetDpiForWindow!stdcall"
+  foreign handler User32GetSystemDpiForProcess(in hProcess as HANDLE) returns CUInt binds to "user32>GetSystemDpiForProcess!stdcall"
+
+  foreign handler Win_GetProcessDpiAwareness (in hProcess as HANDLE, out rDPIAwareness as UIntPtr) \
+        returns HRESULT binds to "Shcore>GetProcessDpiAwareness!stdcall"
+
+  foreign handler Kernel32GetLastError() returns DWORD binds to "kernel32>GetLastError!stdcall"
+  foreign handler Kernel32FormatMessage(in dwFlags as DWORD, in lpSource as optional HWNDWin, in dwMessageId as DWORD, in dwLanguageId as DWORD, in lpBuffer as Widestring, in nSize as DWORD, in Arguments as optional Pointer) \
+        returns DWORD binds to "kernel32>FormatMessageW!stdcall"
 
 
   /**
@@ -59,6 +69,39 @@ library com.livecode.extensions.devore.windows
     end unsafe
 
     return tError
+  end handler
+
+
+  public handler GetProcessDpiAwareness(in hProcess as Integer) returns Integer
+    variable tDpiAwareness as Number
+    variable tResult as Number
+
+    unsafe
+      put Win_GetProcessDpiAwareness(hProcess, tDpiAwareness) into tResult
+    end unsafe
+    log tDpiAwareness
+
+    return tResult
+  end handler
+
+
+  /**
+  Summary: Returns the dpi of a window.
+
+  Parameters:
+  hWnd: An integer representing the id of the window.
+
+  Description:
+
+  Returns: Integer
+  */
+  public handler GetSystemDpiForProcess(in hProcess as Integer) returns Integer
+    variable tDpi as Integer
+    unsafe
+      put User32GetSystemDpiForProcess(hProcess) into tDpi
+    end unsafe
+
+    return tDpi
   end handler
 
 
@@ -142,7 +185,7 @@ library com.livecode.extensions.devore.windows
 
   Returns: Boolean
   */
-  public handler SetForegroundWindow(in hWnd as Number) returns Boolean
+  public handler SetForegroundWindow(in hWnd as Integer) returns Boolean
     variable tResult as Boolean
 
     unsafe

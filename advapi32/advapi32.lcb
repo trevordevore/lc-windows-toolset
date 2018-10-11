@@ -1,0 +1,24 @@
+library community.livecode.trevordevore.advapi
+
+  use com.livecode.engine
+
+  metadata title is "Windows advapi32 Interface"
+  metadata author is "Trevor DeVore"
+  metadata version is "0.0.1"
+
+  public type DWORD is CULong
+  public type HANDLE is Pointer
+  public type HKEY is Pointer
+
+  // "thread agnostic" is only supported in Windows 8 and later
+  private constant kNotifyFilters is { \
+    "change name" : 0x00000001, \
+    "change attributes" : 0x00000002, \
+    "change last set" : 0x00000004, \
+    "change security" : 0x00000008, \
+    "thread agnostic" : 0x10000000 \
+  }
+
+  foreign handler Advapi32RegNotifyChangeKeValue(in hKey as HKEY, in bWatchSubtree as CBool, in dwNotifyFilter as DWORD, in hEvent as HANDLE, in fAsynchronous as CBool) returns LSSTATUS binds to "advapi32>RegNotifyChangeKeValue!stdcall"
+
+end library

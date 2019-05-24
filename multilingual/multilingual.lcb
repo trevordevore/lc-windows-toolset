@@ -1,0 +1,54 @@
+library community.livecode.trevordevore.windowsmultilingual
+
+  use com.livecode.engine
+  use com.livecode.foreign
+
+  metadata title is "Windows Multilingual"
+  metadata author is "Trevor DeVore"
+  metadata version is "0.0.1"
+
+  public type DWORD is CULong
+  public type WORD is CShort
+  public type LANGID is CShort
+  public type LONG_PTR is IntPtr
+  public type LPSTR is ZStringNative
+  public type LPWSTR is ZStringUTF16
+
+  public foreign handler type UilanguageEnumproca(in pLangString as ZStringNative, in pParam as LONG_PTR) using stdcall returns CBool
+
+  private foreign handler EnumUILanguagesA(in pCallbackFunction as UilanguageEnumproca, in pFlags as DWORD, in pParam as LONG_PTR) \
+        returns CBool \
+        binds to "kernel32>EnumUILanguagesA!stdcall"
+
+  private foreign handler GetSystemDefaultUILanguage() returns LANGID binds to "kernel32>GetSystemDefaultUILanguage"
+
+
+  // 2019-05022: Enumeration callbacks will not work yet on Windows because the function call
+  //             cannot be classified as `!stdcall`.
+  public handler winEnumUILanguages() returns String
+    unsafe
+      EnumUILanguages(LanguageEnumFunction, 0, 0)
+    end unsafe
+
+    return ""
+  end handler
+
+
+  private handler LanguageEnumFunction(in pLangString as ZStringNative, in pParam as LONG_PTR) returns CBool
+    -- log pLangString
+    log "hi"
+    return true
+  end handler
+
+
+  public handler winGetSystemDefaultUILanguage() returns Integer
+    variable tLangId as Integer
+
+    unsafe
+      put GetSystemDefaultUILanguage() into tLangId
+    end unsafe
+
+    return tLangId
+  end handler
+
+end library

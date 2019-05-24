@@ -7,12 +7,13 @@ library community.livecode.trevordevore.windowsdpi
   metadata author is "Trevor DeVore"
   metadata version is "0.0.1"
 
-  constant DPI_AWARENESS_PER_MONITOR_AWARE is 3
+  constant DPI_AWARENESS_PER_MONITOR_AWARE is -4
+  constant MONITOR_DEFAULTTOPRIMARY is 1
   constant MDT_EFFECTIVE_DPI is 0
   constant NORMAL_DENSITY is 96.0
 
   public type HMONITOR is Pointer
-  public type DWORD is CSLong
+  public type DWORD is CULong
   public type HRESULT is CSLong
   public type DPI_AWARENESS_CONTEXT is IntPtr
   public type MONITOR_DPI_TYPE is CInt
@@ -22,7 +23,7 @@ library community.livecode.trevordevore.windowsdpi
         returns HMONITOR binds to "user32>MonitorFromPoint!stdcall"
 
   foreign handler SetThreadDpiAwarenessContext (in dpiContext as DPI_AWARENESS_CONTEXT) \
-        returns optional DPI_AWARENESS_CONTEXT binds to "user32>MonitorFromPoint!stdcall"
+        returns optional DPI_AWARENESS_CONTEXT binds to "user32>SetThreadDpiAwarenessContext!stdcall"
 
   foreign handler GetDpiForMonitor (in pMonitor as HMONITOR, in dpiType as MONITOR_DPI_TYPE, out dpiX as CUInt, out dpiY as CUInt) \
         returns HRESULT binds to "shcore>GetDpiForMonitor"
@@ -64,7 +65,7 @@ library community.livecode.trevordevore.windowsdpi
 
       unsafe
         // Use current context to determine on which monitor point passed from LCS falls.
-        put MonitorFromPoint(tPoint, 0) into tMonitor
+        put MonitorFromPoint(tPoint, MONITOR_DEFAULTTOPRIMARY) into tMonitor
         // Now change context to get actual DPI fo monitor
         put SetThreadDpiAwarenessContext(DPI_AWARENESS_PER_MONITOR_AWARE) into tOldDpiContext
         put GetDpiForMonitor(tMonitor, MDT_EFFECTIVE_DPI, dpiX, dpiY) into tResult

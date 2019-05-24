@@ -1,0 +1,86 @@
+library community.livecode.trevordevore.windowsdpi
+
+  use com.livecode.engine
+  use com.livecode.foreign
+
+  metadata title is "Windows DPI"
+  metadata author is "Trevor DeVore"
+  metadata version is "0.0.1"
+
+  constant DPI_AWARENESS_PER_MONITOR_AWARE is 3
+  constant MDT_EFFECTIVE_DPI is 0
+  constant NORMAL_DENSITY is 96.0
+
+  public type HMONITOR is Pointer
+  public type DWORD is CSLong
+  public type HRESULT is CSLong
+  public type DPI_AWARENESS_CONTEXT is IntPtr
+  public type MONITOR_DPI_TYPE is CInt
+  public foreign type wPOINT binds to "MCAggregateTypeInfo:FF"
+
+  foreign handler MonitorFromPoint (in pPoint as wPOINT, in pFlags as DWORD) \
+        returns HMONITOR binds to "user32>MonitorFromPoint!stdcall"
+
+  foreign handler SetThreadDpiAwarenessContext (in dpiContext as DPI_AWARENESS_CONTEXT) \
+        returns optional DPI_AWARENESS_CONTEXT binds to "user32>MonitorFromPoint!stdcall"
+
+  foreign handler GetDpiForMonitor (in pMonitor as HMONITOR, in dpiType as MONITOR_DPI_TYPE, out dpiX as CUInt, out dpiY as CUInt) \
+        returns HRESULT binds to "shcore>GetDpiForMonitor"
+
+
+  /**
+  Summary: Returns the pixelScale for monitors associated with the locs passed in.
+
+  Parameters:
+  pMonitorLocs: CR delimited list of locations (e.g. x,y)
+
+  Description:
+  For each location passed in this handler will resolve the monitor associated with the
+  location and determine the pixelScale of that monitor. This assu
+
+  Returns: CR delimited list of pixelScale values.
+  */
+  public handler winGetPixelScalesForMonitors(in pMonitorLocs as String) returns String
+    variable tLocsList as List
+    variable tElement as String
+    variable tLoc as List
+    variable tPoint as wPOINT
+    variable tOldDpiContext as DPI_AWARENESS_CONTEXT
+    variable tResult as HRESULT
+    variable dpiX as Integer
+    variable dpiY as Integer
+    variable tPixelScale as Number
+    variable tPixelScales as String
+
+    split pMonitorLocs by newline into tLocsList
+
+    repeat for each element tElement in tLocsList
+      variable tMonitor as optional HMONITOR
+
+      split tElement by "," into tLoc
+      put element 1 of tLoc parsed as number into element 1 of tLoc
+      put element 2 of tLoc parsed as number into element 2 of tLoc
+      put tLoc into tPoint
+
+      unsafe
+        // Use current context to determine on which monitor point passed from LCS falls.
+        put MonitorFromPoint(tPoint, 0) into tMonitor
+        // Now change context to get actual DPI fo monitor
+        put SetThreadDpiAwarenessContext(DPI_AWARENESS_PER_MONITOR_AWARE) into tOldDpiContext
+        put GetDpiForMonitor(tMonitor, MDT_EFFECTIVE_DPI, dpiX, dpiY) into tResult
+        if tResult >= 0 then
+          put the maximum value of [dpiX, dpiY] / NORMAL_DENSITY into tPixelScale
+          put tPixelScale formatted as string & newline after tPixelScales
+        else
+          put newline after tPixelScales
+        end if
+
+        if tOldDpiContext is not nothing then
+          SetThreadDpiAwarenessContext(tOldDpiContext)
+        end if
+      end unsafe
+    end repeat
+
+    return tPixelScales
+  end handler
+end library

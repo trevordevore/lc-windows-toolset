@@ -12,7 +12,7 @@ library community.livecode.trevordevore.windowsdpi
   constant MDT_EFFECTIVE_DPI is 0
   constant NORMAL_DENSITY is 96.0
 
-  public type HMONITOR is Pointer
+  public type HMONITOR is UIntPtr
   public type DWORD is CULong
   public type HRESULT is CSLong
   public type DPI_AWARENESS_CONTEXT is IntPtr

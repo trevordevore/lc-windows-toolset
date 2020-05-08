@@ -7,8 +7,8 @@ library community.livecode.trevordevore.advapi
   metadata version is "0.0.1"
 
   public type DWORD is CULong
-  public type HANDLE is Pointer
-  public type HKEY is Pointer
+  public type HANDLE is UIntPtr
+  public type HKEY is UIntPtr
 
   // "thread agnostic" is only supported in Windows 8 and later
   private constant kNotifyFilters is { \

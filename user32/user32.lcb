@@ -10,8 +10,8 @@ library com.livecode.extensions.devore.windows
   // Note: These public types aren't recognized by the compiler. I think example in docs is wrong.
   public type DWORD is CULong
   public type WIDESTRING is ZStringUTF16
-  public type HINSTANCE is Pointer
-  public type HMENU is Pointer
+  public type HINSTANCE is UIntPtr
+  public type HMENU is UIntPtr
   public type HWND is UIntPtr
 
   foreign handler User32SetForegroundWindow(in pHWND as HWND) \
